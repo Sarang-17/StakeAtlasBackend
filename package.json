@@ -1,0 +1,52 @@
+{
+	"name": "nem-starter",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"test": "mocha test.js",
+		"dev": "nodemon src/server",
+		"start": "node src/server"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/imrcht/nem-starter.git"
+	},
+	"author": "",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/imrcht/nem-starter/issues"
+	},
+	"homepage": "https://github.com/imrcht/nem-starter#readme",
+	"dependencies": {
+		"assert": "^2.0.0",
+		"axios": "^1.2.1",
+		"bcryptjs": "^2.4.3",
+		"cloudinary": "^1.33.0",
+		"colors": "^1.4.0",
+		"cors": "^2.8.5",
+		"dns": "^0.2.2",
+		"dotenv": "^16.0.3",
+		"express": "^4.18.2",
+		"express-fileupload": "^1.4.0",
+		"joi": "^17.7.0",
+		"jsonwebtoken": "^8.5.1",
+		"mongoose": "^6.3.1",
+		"multer": "^1.4.4",
+		"nanoid": "^3.3.4",
+		"nodemailer": "^6.7.5",
+		"nodemon": "^2.0.16",
+		"razorpay": "^2.8.1",
+		"winston": "^3.7.2",
+		"winston-daily-rotate-file": "^4.6.1",
+		"winston-loki": "^6.0.5"
+	},
+	"devDependencies": {
+		"eslint": "^8.33.0",
+		"eslint-config-standard": "^17.0.0",
+		"eslint-plugin-import": "^2.27.5",
+		"eslint-plugin-n": "^15.6.1",
+		"eslint-plugin-promise": "^6.1.1",
+		"mocha": "^10.2.0"
+	}
+}
