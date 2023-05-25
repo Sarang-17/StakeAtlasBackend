@@ -16,7 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 // #region CONNECTIVITY CHECK
 dns.lookup('www.google.com', (err) => {
   if (err) {
-    logger.error('Error connecting google, no internet'.req.bold);
+    logger.error('Error connecting google, no internet');
     process.exit();
   } else {
     logger.info('Successfully connected to internet'.green);
