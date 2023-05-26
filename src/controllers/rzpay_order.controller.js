@@ -1,6 +1,4 @@
-const crypto = require('crypto');
 const { nanoid } = require('nanoid');
-const Razorpay = require('razorpay');
 const errorResponse = require('../utils/error.utils');
 const asyncHandler = require('../middlewares/async.middleware');
 require('dotenv').config();
@@ -18,10 +16,9 @@ const { USER_ROLE, ORDER_STATUS } = require('../utils/enums');
 // Logger
 const logger = require('../utils/winston');
 
-const instance = new Razorpay({
-  key_id: 'rzp_test_MwRO5Q0p63zWX2',
-  key_secret: "",
-});
+// CashFree
+const sdk = require('api')('@cashfreedocs-new/v3#9qqu7am5li0449pa');
+// sdk.server(process.env.CASHFREE_BASEURL);
 
 // JOI schema
 const { createOrderSchema, verifySignatureSchema } = require('../joi/order');
@@ -61,7 +58,7 @@ const createRzpayOrderId = asyncHandler(async (req, res, next) => {
         return next(new errorResponse('Error creating order ', 500));
       }
 
-      if (fetchedProduct.status.state != 'Active')
+      if (fetchedProduct.status.state != 'active')
         return next(new errorResponse('Product not active', 401));
 
       orderItems = {
@@ -105,18 +102,40 @@ const createRzpayOrderId = asyncHandler(async (req, res, next) => {
         : userCart.total_price;
     }
     const amount = itemsPrice + taxPrice + shippingPrice;
-    const userId = req.user.id;
-    const receipt = await nanoid();
+    const userId = req.user._id;
 
+    // CASHFREE --------------------
+    const orderID = nanoid();
+    var order=null;
+    let orderCreated=false;
     const options = {
-      amount: amount * 100, // amount in the smallest currency unit
-      currency: 'INR',
-      receipt: receipt,
+      order_id: `${orderID}`,
+      order_amount: 1,
+      order_currency: 'INR',
+      customer_details: {
+        customer_id: userId,
+        customer_email: req.user.email,
+        customer_phone: req.user.phone
+      },
+      order_meta: {
+        return_url: `${process.env.CASHFREE_REDIRECTURL}?order_id={order_id}`,
+        // notify_url: process.env.HOST_URI+"/api/v1/order/notify"
+      },
+      order_note: `Order initiated at ${Date.now()}`
     };
-    const order = await instance.orders.create(options);
+    await sdk.createOrder(options,
+    {
+      'x-client-id': process.env.CASHFREE_CLIENTID,
+      'x-client-secret': process.env.CASHFREE_CLIENT_SECRET,
+      'x-api-version': '2022-09-01'
+    })
+    .then(({ data }) => { orderCreated=true; order=data; })
+    .catch( err => {order=err;logger.info(err);});
+    // ------------------------------------
+
     const createObject = {
-      payment_gateway_order_id: order.id,
-      payment_gateway: PAYMENT_GATEWAY.RAZORPAY,
+      payment_gateway_order_id: order.order_id,
+      payment_gateway: PAYMENT_GATEWAY.CASHFREE,
       amount: amount,
       user: userId,
       order_items: orderItems,
@@ -263,17 +282,19 @@ const verifySignature = asyncHandler(async (req, res, next) => {
       );
     }
 
-    const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+    const { orderId } = req.body;
     const userId = req.user.id;
     let amount = 0;
-    const hmac = crypto.createHmac('sha256', process.env.RAZORPAY_SECRET);
-    hmac.update(razorpayOrderId + '|' + razorpayPaymentId);
-    let generatedSignature = hmac.digest('hex');
-
-    let isSignatureValid = generatedSignature == razorpaySignature;
-
-    logger.info('Is signature valid: ', isSignatureValid);
-
+    let isSignatureValid=false;
+    await sdk.getStatus({
+      'orderId': orderId,
+      'appId': process.env.CASHFREE_CLIENTID,
+      'secretKey': process.env.CASHFREE_CLIENT_SECRET
+    })
+    .then(({ data }) => {isSignatureValid=(data.orderStatus=="PAID")})
+    .catch(err => {
+      logger.error('Cannot fetch order: ', err);
+    });
     if (isSignatureValid) {
       // let user = await User.findOne({
       //   _id: userId,
@@ -285,8 +306,8 @@ const verifySignature = asyncHandler(async (req, res, next) => {
           {
             modelName: DB_MODELS.order,
             query: {
-              payment_gateway_order_id: razorpayOrderId,
-              payment_gateway: PAYMENT_GATEWAY.RAZORPAY,
+              payment_gateway_order_id: orderId,
+              payment_gateway: PAYMENT_GATEWAY.CASHFREE,
             },
             t: session,
           },

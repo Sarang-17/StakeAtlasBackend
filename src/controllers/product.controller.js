@@ -105,8 +105,8 @@ const addProduct = asyncHandler(async (req, res, next) => {
       return next(new errorResponse('Not authorized to update these', 401));
     }
 
-    req.body.longitude = req.body.loc ? req.body.loc.coordinates[0] : null;
-    req.body.latitude = req.body.loc ? req.body.loc.coordinates[1] : null;
+    req.body.longitude = req.body.loc ? req.body.loc.coordinates[0] : 0;
+    req.body.latitude = req.body.loc ? req.body.loc.coordinates[1] : 0;
 
     if (!req.body._id) {
       // Add user to body
@@ -123,7 +123,11 @@ const addProduct = asyncHandler(async (req, res, next) => {
         ...req.body.product_address,
         address_type: ADDRESS_TYPE.PRODUCT_ADDRESS,
         primary: true,
+        name: req.user.first_name,
+        user: req.user._id,
+        phone: req.user.phone
       };
+
 
       const { data: createdProductAddress, error: errCreatingProductAdd } =
         await Repository.create(
@@ -134,20 +138,20 @@ const addProduct = asyncHandler(async (req, res, next) => {
           },
           logger
         );
-
+        
       if (errCreatingProductAdd) {
         await session.abortTransaction();
         logger.error('Error creating product address: ', errCreatingProductAdd);
         return next(new errorResponse('Error adding product ', 500));
       }
 
-      req.body.product_address = productAddress._id;
+      req.body.product_address = createdProductAddress._id;
 
       const createProductObj = {
         ...req.body,
         product_address: createdProductAddress._id,
-      };
-
+        seller: req.user._id
+      };      
       const { data: createdProduct, error: errCreatingProduct } =
         await Repository.create(
           {
@@ -157,10 +161,10 @@ const addProduct = asyncHandler(async (req, res, next) => {
           },
           logger
         );
-
-      if (errCreatingProduct) {
+      
+      if (errCreatingProduct && errCreatingProduct!="") {
         await session.abortTransaction();
-        logger.error('Error creating product: ', errCreatingProduct);
+        logger.error('Error creating product: ', typeof(errCreatingProduct));
         return next(new errorResponse('Error adding product ', 500));
       }
 

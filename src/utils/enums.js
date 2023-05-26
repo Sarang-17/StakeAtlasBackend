@@ -47,7 +47,7 @@ const PRODUCT_CONDITION = {
 };
 
 const PAYMENT_GATEWAY = {
-  RAZORPAY: 'razorpay',
+  CASHFREE: 'cashfree',
 };
 
 module.exports = {

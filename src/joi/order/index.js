@@ -8,9 +8,7 @@ const createOrderSchema = joi.object().keys({
 });
 
 const verifySignatureSchema = joi.object().keys({
-  razorpayOrderId: joi.string().required(),
-  razorpayPaymentId: joi.string().required(),
-  razorpaySignature: joi.string().required(),
+  orderId: joi.string().required(),
 });
 
 module.exports = {
