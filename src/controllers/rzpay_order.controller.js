@@ -110,7 +110,7 @@ const createRzpayOrderId = asyncHandler(async (req, res, next) => {
     let orderCreated=false;
     const options = {
       order_id: `${orderID}`,
-      order_amount: 1,
+      order_amount: amount,
       order_currency: 'INR',
       customer_details: {
         customer_id: userId,
